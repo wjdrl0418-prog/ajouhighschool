@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관절 삼각형 삼각법 계산기</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .image-container {
+            flex: 1;
+            min-width: 500px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .results-container {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #imageCanvas {
+            max-width: 100%;
+            background-color: #f1f1f1;
+            cursor: crosshair;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .controls {
+            margin-top: 15px;
+        }
+        .point-list {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .tab-container {
+            margin-top: 20px;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+            color: #333;
+            margin: 0;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            margin: 5px;
+        }
+        #lawCalcResult {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .help-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .triangle-visual {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #triangleVisual {
+            max-width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>관절 삼각형 삼각법 계산기</h1>
+    <p>이미지를 업로드하고 세 점을 선택하여 삼각형을 만든 후, 코사인법칙과 사인법칙을 계산할 수 있습니다.</p>
+    
+    <div class="container">
+        <div class="image-container">
+            <h2>이미지 업로드 및 점 선택</h2>
+            <div>
+                <input type="file" id="imageUpload" accept="image/*">
+                <p class="help-text">* 이미지는 서버로 전송되지 않으며 브라우저 내에서만 처리됩니다.</p>
+            </div>
+            <canvas id="imageCanvas" width="500" height="500"></canvas>
+            <div class="controls">
+                <button id="clearPoints">모든 점 지우기</button>
+                <button id="deleteLastPoint">마지막 점 지우기</button>
+            </div>
+            <div class="point-list">
+                <h3>선택된 점 좌표</h3>
+                <table id="pointTable">
+                    <tr>
+                        <th>점</th>
+                        <th>X 좌표</th>
+                        <th>Y 좌표</th>
+                    </tr>
+                    <tbody id="pointsList"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="results-container">
+            <h2>삼각형 계산 결과</h2>
+            
+            <div id="triangleInfo">
+                <p>세 점을 선택하면 삼각형 정보가 여기에 표시됩니다.</p>
+            </div>
+            
+            <div class="triangle-visual">
+                <canvas id="triangleVisual" width="300" height="300"></canvas>
+            </div>
+            
+            <div class="tab-container">
+                <div class="tab">
+                    <button class="tablinks active" onclick="openTab(event, 'lawsFromPoints')">점에서 법칙 계산</button>
+                    <button class="tablinks" onclick="openTab(event, 'cosineCalc')">코사인법칙 계산기</button>
+                    <button class="tablinks" onclick="openTab(event, 'sineCalc')">사인법칙 계산기</button>
+                </div>
+                
+                <div id="lawsFromPoints" class="tabcontent" style="display:block;">
+                    <h3>선택한 점으로부터 계산된 삼각법</h3>
+                    <div id="cosLawResult"></div>
+                    <div id="sineLawResult"></div>
+                </div>
+                
+                <div id="cosineCalc" class="tabcontent">
+                    <h3>코사인법칙 계산기</h3>
+                    <p>코사인법칙: c² = a² + b² - 2ab·cosC</p>
+                    
+                    <div>
+                        <h4>각도 계산하기</h4>
+                        <div>
+                            <label>변 a: </label>
+                            <input type="number" id="sideA1" step="0.01" min="0">
+                            <label>변 b: </label>
+                            <input type="number" id="sideB1" step="0.01" min="0">
+                            <label>변 c: </label>
+                            <input type="number" id="sideC1" step="0.01" min="0">
+                            <button onclick="calculateAngleFromSides()">각도 계산</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>변 길이 계산하기</h4>
+                        <div>
+                            <label>변 a: </label>
+                            <input type="number" id="sideA2" step="0.01" min="0">
+                            <label>변 b: </label>
+                            <input type="number" id="sideB2" step="0.01" min="0">
+                            <label>각 C (도): </label>
+                            <input type="number" id="angleC" step="0.01" min="0" max="180">
+                            <button onclick="calculateSideFromAngles()">변 길이 계산</button>
+                        </div>
+                    </div>
+                    
+                    <div id="cosineLawCalcResult"></div>
+                </div>
+                
+                <div id="sineCalc" class="tabcontent">
+                    <h3>사인법칙 계산기</h3>
+                    <p>사인법칙: a/sin(A) = b/sin(B) = c/sin(C)</p>
+                    
+                    <div>
+                        <h4>알고 있는 값 입력</h4>
+                        <div>
+                            <label>변 a: </label>
+                            <input type="number" id="sineSideA" step="0.01" min="0">
+                            <label>각 A (도): </label>
+                            <input type="number" id="sineAngleA" step="0.01" min="0" max="180">
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <label>변 b: </label>
+                            <input type="number" id="sineSideB" step="0.01" min="0">
+                            <label>각 B (도): </label>
+                            <input type="number" id="sineAngleB" step="0.01" min="0" max="180">
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <label>변 c: </label>
+                            <input type="number" id="sineSideC" step="0.01" min="0">
+                            <label>각 C (도): </label>
+                            <input type="number" id="sineAngleC" step="0.01" min="0" max="180">
+                        </div>
+                        <button onclick="calculateSineLaw()" style="margin-top: 10px;">계산하기</button>
+                    </div>
+                    
+                    <div id="sineLawCalcResult"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const triangleCanvas = document.getElementById('triangleVisual');
+        const triangleCtx = triangleCanvas.getContext('2d');
+        let points = [];
+        let img = null;
+        
+        // 파일 업로드 처리
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // 유효한 이미지 파일 확인
+            if (!file.type.match('image.*')) {
+                alert('이미지 파일만 업로드 가능합니다.');
+                return;
+            }
+            
+            // 파일 리더 생성
+            const reader = new FileReader();
+            
+            // 오류 처리
+            reader.onerror = function() {
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+            };
+            
+            reader.onload = function(event) {
+                // 이미지 로드
+                img = new Image();
+                
+                // 이미지 로드 오류 처리
+                img.onerror = function() {
+                    alert('이미지를 로드하는 중 오류가 발생했습니다.');
+                };
+                
+                img.onload = function() {
+                    try {
+                        // 캔버스 크기 조정
+                        const maxWidth = 500;
+                        const maxHeight = 500;
+                        
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // 이미지가 캔버스보다 크면 비율 유지하며 크기 조정
+                        if (width > maxWidth || height > maxHeight) {
+                            const ratio = Math.min(maxWidth / width, maxHeight / height);
+                            width *= ratio;
+                            height *= ratio;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // 이미지 그리기
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 점 초기화
+                        points = [];
+                        updatePointsList();
+                        updateTriangleInfo();
+                        
+                        // 성공 메시지
+                        alert('이미지가 성공적으로 로드되었습니다. 이제 세 개의 관절 점을 선택하세요.');
+                    } catch (error) {
+                        console.error('이미지 처리 중 오류:', error);
+                        alert('이미지 처리 중 오류가 발생했습니다.');
+                    }
+                };
+                
+                // 이미지 소스 설정
+                img.src = event.target.result;
+            };
+            
+            // 파일을 Data URL로 읽기
+            try {
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('파일 읽기 오류:', error);
+                alert('파일을 읽을 수 없습니다.');
+            }
+        });
+        
+        // 캔버스 클릭 이벤트
+        canvas.addEventListener('click', function(e) {
+            if (!img) return;
+            
+            // 클릭 위치 계산
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 3개 이상이면 새로운 점 추가 방지
+            if (points.length >= 3) {
+                alert('이미 3개의 점이 선택되었습니다. 점을 지우고 다시 시도하세요.');
+                return;
+            }
+            
+            // 점 추가
+            points.push({ x, y });
+            
+            // 캔버스 다시 그리기
+            redrawCanvas();
+            
+            // 점 목록 및 삼각형 정보 업데이트
+            updatePointsList();
+            updateTriangleInfo();
+        });
+        
+        // 모든 점 지우기
+        document.getElementById('clearPoints').addEventListener('click', function() {
+            points = [];
+            redrawCanvas();
+            updatePointsList();
+            updateTriangleInfo();
+        });
+        
+        // 마지막 점 지우기
+        document.getElementById('deleteLastPoint').addEventListener('click', function() {
+            if (points.length > 0) {
+                points.pop();
+                redrawCanvas();
+                updatePointsList();
+                updateTriangleInfo();
+            }
+        });
+        
+        // 캔버스 다시 그리기
+        function redrawCanvas() {
+            if (!img) return;
+            
+            // 이미지 다시 그리기
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // 점 그리기
+            points.forEach((point, index) => {
+                drawPoint(point.x, point.y, index);
+            });
+            
+            // 선 그리기
+            if (points.length >= 2) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                
+                // 삼각형 완성
+                if (points.length === 3) {
+                    ctx.lineTo(points[0].x, points[0].y);
+                }
+                
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+        
+        // 점 그리기
+        function drawPoint(x, y, index) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = getPointColor(index);
+            ctx.fill();
+            
+            // 라벨 표시
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.fillText(String.fromCharCode(65 + index), x + 8, y - 8);
+        }
+        
+        // 점 색상 가져오기
+        function getPointColor(index) {
+            const colors = ['#FF5733', '#33FF57', '#3357FF'];
+            return colors[index % colors.length];
+        }
+        
+        // 점 목록 업데이트
+        function updatePointsList() {
+            const tbody = document.getElementById('pointsList');
+            tbody.innerHTML = '';
+            
+            points.forEach((point, index) => {
+                const row = document.createElement('tr');
+                
+                const labelCell = document.createElement('td');
+                labelCell.textContent = String.fromCharCode(65 + index); // A, B, C
+                
+                const xCell = document.createElement('td');
+                xCell.textContent = point.x.toFixed(2);
+                
+                const yCell = document.createElement('td');
+                yCell.textContent = point.y.toFixed(2);
+                
+                row.appendChild(labelCell);
+                row.appendChild(xCell);
+                row.appendChild(yCell);
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 두 점 사이의 거리 계산
+        function calculateDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+        
+        // 삼각형 정보 업데이트
+        function updateTriangleInfo() {
+            const infoDiv = document.getElementById('triangleInfo');
+            const cosLawDiv = document.getElementById('cosLawResult');
+            const sineLawDiv = document.getElementById('sineLawResult');
+            
+            if (points.length < 3) {
+                infoDiv.innerHTML = `<p>더 많은 점을 선택하세요. 현재 ${points.length}/3 점이 선택되었습니다.</p>`;
+                cosLawDiv.innerHTML = '';
+                sineLawDiv.innerHTML = '';
+                
+                // 삼각형 시각화 지우기
+                triangleCtx.clearRect(0, 0, triangleCanvas.width, triangleCanvas.height);
+                return;
+            }
+            
+            // 세 변의 길이 계산
+            const sideA = calculateDistance(points[1], points[2]); // BC
+            const sideB = calculateDistance(points[0], points[2]); // AC
+            const sideC = calculateDistance(points[0], points[1]); // AB
+            
+            // 세 각의 크기 계산 (라디안)
+            const angleA = Math.acos((Math.pow(sideB, 2) + Math.pow(sideC, 2) - Math.pow(sideA, 2)) / (2 * sideB * sideC));
+            const angleB = Math.acos((Math.pow(sideA, 2) + Math.pow(sideC, 2) - Math.pow(sideB, 2)) / (2 * sideA * sideC));
+            const angleC = Math.acos((Math.pow(sideA, 2) + Math.pow(sideB, 2) - Math.pow(sideC, 2)) / (2 * sideA * sideB));
+            
+            // 각도를 도로 변환
+            const angleADeg = angleA * 180 / Math.PI;
+            const angleBDeg = angleB * 180 / Math.PI;
+            const angleCDeg = angleC * 180 / Math.PI;
+            
+            // 삼각형 정보 표시
+            infoDiv.innerHTML = `
+                <h3>삼각형 정보</h3>
+                <table>
+                    <tr>
+                        <th>요소</th>
+                        <th>값</th>
+                    </tr>
+                    <tr>
+                        <td>변 a (BC)</td>
+                        <td>${sideA.toFixed(2)} 픽셀</td>
+                    </tr>
+                    <tr>
+                        <td>변 b (AC)</td>
+                        <td>${sideB.toFixed(2)} 픽셀</td>
+                    </tr>
+                    <tr>
+                        <td>변 c (AB)</td>
+                        <td>${sideC.toFixed(2)} 픽셀</td>
+                    </tr>
+                    <tr>
+                        <td>각 A</td>
+                        <td>${angleADeg.toFixed(2)}°</td>
+                    </tr>
+                    <tr>
+                        <td>각 B</td>
+                        <td>${angleBDeg.toFixed(2)}°</td>
+                    </tr>
+                    <tr>
+                        <td>각 C</td>
+                        <td>${angleCDeg.toFixed(2)}°</td>
+                    </tr>
+                </table>
+            `;
+            
+            // 코사인법칙 표시
+            cosLawDiv.innerHTML = `
+                <h4>코사인법칙</h4>
+                <p>a² = b² + c² - 2bc·cosA</p>
+                <p>${sideA.toFixed(2)}² = ${sideB.toFixed(2)}² + ${sideC.toFixed(2)}² - 2 × ${sideB.toFixed(2)} × ${sideC.toFixed(2)} × cos(${angleADeg.toFixed(2)}°)</p>
+                <p>${Math.pow(sideA, 2).toFixed(2)} = ${(Math.pow(sideB, 2) + Math.pow(sideC, 2) - 2 * sideB * sideC * Math.cos(angleA)).toFixed(2)}</p>
+                
+                <p>b² = a² + c² - 2ac·cosB</p>
+                <p>${sideB.toFixed(2)}² = ${sideA.toFixed(2)}² + ${sideC.toFixed(2)}² - 2 × ${sideA.toFixed(2)} × ${sideC.toFixed(2)} × cos(${angleBDeg.toFixed(2)}°)</p>
+                <p>${Math.pow(sideB, 2).toFixed(2)} = ${(Math.pow(sideA, 2) + Math.pow(sideC, 2) - 2 * sideA * sideC * Math.cos(angleB)).toFixed(2)}</p>
+                
+                <p>c² = a² + b² - 2ab·cosC</p>
+                <p>${sideC.toFixed(2)}² = ${sideA.toFixed(2)}² + ${sideB.toFixed(2)}² - 2 × ${sideA.toFixed(2)} × ${sideB.toFixed(2)} × cos(${angleCDeg.toFixed(2)}°)</p>
+                <p>${Math.pow(sideC, 2).toFixed(2)} = ${(Math.pow(sideA, 2) + Math.pow(sideB, 2) - 2 * sideA * sideB * Math.cos(angleC)).toFixed(2)}</p>
+            `;
+            
+            // 사인법칙 표시
+            sineLawDiv.innerHTML = `
+                <h4>사인법칙</h4>
+                <p>a/sin(A) = b/sin(B) = c/sin(C)</p>
+                <p>${sideA.toFixed(2)}/sin(${angleADeg.toFixed(2)}°) = ${sideB.toFixed(2)}/sin(${angleBDeg.toFixed(2)}°) = ${sideC.toFixed(2)}/sin(${angleCDeg.toFixed(2)}°)</p>
+                <p>${(sideA / Math.sin(angleA)).toFixed(2)} = ${(sideB / Math.sin(angleB)).toFixed(2)} = ${(sideC / Math.sin(angleC)).toFixed(2)}</p>
+            `;
+            
+            // 삼각형 시각화
+            drawTriangleVisualization(sideA, sideB, sideC);
+        }
+        
+        // 삼각형 시각화 그리기
+        function drawTriangleVisualization(sideA, sideB, sideC) {
+            triangleCtx.clearRect(0, 0, triangleCanvas.width, triangleCanvas.height);
+            
+            // 삼각형 크기 조정
+            const scaleFactor = Math.min(triangleCanvas.width, triangleCanvas.height) / Math.max(sideA, sideB, sideC) * 0.8;
+            
+            // 점 A 위치 계산 (삼각형의 한 점을 원점으로)
+            const ax = triangleCanvas.width / 2;
+            const ay = triangleCanvas.height * 0.7;
+            
+            // 점 B 위치 계산 (점 A에서 오른쪽으로 c만큼)
+            const bx = ax + sideC * scaleFactor;
+            const by = ay;
+            
+            // 점 C 위치 계산
+            // 코사인법칙을 사용하여 각 C 계산
+            const angleC = Math.acos((Math.pow(sideA, 2) + Math.pow(sideB, 2) - Math.pow(sideC, 2)) / (2 * sideA * sideB));
+            
+            // 삼각법을 사용하여 점 C의 좌표 계산
+            const cx = ax + sideB * scaleFactor * Math.cos(angleC);
+            const cy = ay - sideB * scaleFactor * Math.sin(angleC);
+            
+            // 삼각형 그리기
+            triangleCtx.beginPath();
+            triangleCtx.moveTo(ax, ay);
+            triangleCtx.lineTo(bx, by);
+            triangleCtx.lineTo(cx, cy);
+            triangleCtx.closePath();
+            triangleCtx.strokeStyle = 'blue';
+            triangleCtx.lineWidth = 2;
+            triangleCtx.stroke();
+            
+            // 점 라벨 그리기
+            drawTrianglePoint(ax, ay, 'A', triangleCtx);
+            drawTrianglePoint(bx, by, 'B', triangleCtx);
+            drawTrianglePoint(cx, cy, 'C', triangleCtx);
+            
+            // 변 라벨 그리기
+            triangleCtx.fillStyle = 'black';
+            triangleCtx.font = '14px Arial';
+            
+            // 변 a (BC)
+            const abx = (bx + cx) / 2;
+            const aby = (by + cy) / 2;
+            triangleCtx.fillText(`a = ${sideA.toFixed(1)}`, abx, aby - 10);
+            
+            // 변 b (AC)
+            const acx = (ax + cx) / 2;
+            const acy = (ay + cy) / 2;
+            triangleCtx.fillText(`b = ${sideB.toFixed(1)}`, acx - 30, acy);
+            
+            // 변 c (AB)
+            const bcx = (ax + bx) / 2;
+            const bcy = (ay + by) / 2;
+            triangleCtx.fillText(`c = ${sideC.toFixed(1)}`, bcx, bcy + 20);
+        }
+        
+        // 삼각형 점 그리기
+        function drawTrianglePoint(x, y, label, ctx) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.fillText(label, x + 8, y - 8);
+        }
+        
+        // 탭 열기
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            const tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // 각도 계산 (코사인법칙)
+        function calculateAngleFromSides() {
+            const a = parseFloat(document.getElementById('sideA1').value);
+            const b = parseFloat(document.getElementById('sideB1').value);
+            const c = parseFloat(document.getElementById('sideC1').value);
+            
+            if (isNaN(a) || isNaN(b) || isNaN(c)) {
+                alert('모든 변의 길이를 입력하세요.');
+                return;
+            }
+            
+            if (a + b <= c || a + c <= b || b + c <= a) {
+                alert('삼각형 부등식을 만족하지 않습니다. 가장 긴 변의 길이는 다른 두 변의 길이의 합보다 작아야 합니다.');
+                return;
+            }
+            
+            // 코사인법칙으로 각도 계산
+            const angleA = Math.acos((b*b + c*c - a*a) / (2 * b * c)) * 180 / Math.PI;
+            const angleB = Math.acos((a*a + c*c - b*b) / (2 * a * c)) * 180 / Math.PI;
+            const angleC = Math.acos((a*a + b*b - c*c) / (2 * a * b)) * 180 / Math.PI;
+            
+            const resultDiv = document.getElementById('cosineLawCalcResult');
+            resultDiv.innerHTML = `
+                <h4>결과</h4>
+                <div class="result-box">
+                    <p>각 A = ${angleA.toFixed(2)}°</p>
+                    <p>각 B = ${angleB.toFixed(2)}°</p>
+                    <p>각 C = ${angleC.toFixed(2)}°</p>
+                    <p>각의 합 = ${(angleA + angleB + angleC).toFixed(2)}°</p>
+                </div>
+            `;
+        }
+        
+        // 변 길이 계산 (코사인법칙)
+        function calculateSideFromAngles() {
+            const a = parseFloat(document.getElementById('sideA2').value);
+            const b = parseFloat(document.getElementById('sideB2').value);
+            const angleC = parseFloat(document.getElementById('angleC').value);
+            
+            if (isNaN(a) || isNaN(b) || isNaN(angleC)) {
+                alert('두 변의 길이와 사이 각도를 입력하세요.');
+                return;
+            }
+            
+            if (angleC <= 0 || angleC >= 180) {
+                alert('각도는 0°와 180° 사이의 값이어야 합니다.');
+                return;
+            }
+            
+            // 코사인법칙으로 나머지 변 길이 계산
+            const angleRad = angleC * Math.PI / 180;
+            const c = Math.sqrt(a*a + b*b - 2 * a * b * Math.cos(angleRad));
+            
+            const resultDiv = document.getElementById('cosineLawCalcResult');
+            resultDiv.innerHTML = `
+                <h4>결과</h4>
+                <div class="result-box">
+                    <p>변 c = ${c.toFixed(2)}</p>
+                    <p>코사인법칙: c² = a² + b² - 2ab·cosC</p>
+                    <p>c² = ${a.toFixed(2)}² + ${b.toFixed(2)}² - 2·${a.toFixed(2)}·${b.toFixed(2)}·cos(${angleC}°)</p>
+                    <p>c² = ${(a*a + b*b - 2*a*b*Math.cos(angleRad)).toFixed(2)}</p>
+                    <p>c = ${c.toFixed(2)}</p>
+                </div>
+            `;
+        }
+        
+        // 사인법칙 계산
+        function calculateSineLaw() {
+            const sideA = parseFloat(document.getElementById('sineSideA').value);
+            const angleA = parseFloat(document.getElementById('sineAngleA').value);
+            const sideB = parseFloat(document.getElementById('sineSideB').value);
+            const angleB = parseFloat(document.getElementById('sineAngleB').value);
+            const sideC = parseFloat(document.getElementById('sineSideC').value);
+            const angleC = parseFloat(document.getElementById('sineAngleC').value);
+            
+            const resultDiv = document.getElementById('sineLawCalcResult');
+            
+            // 입력된 값 확인
+            let knownSides = 0;
+            let knownAngles = 0;
+            
+            if (!isNaN(sideA)) knownSides++;
+            if (!isNaN(sideB)) knownSides++;
+            if (!isNaN(sideC)) knownSides++;
+            
+            if (!isNaN(angleA)) knownAngles++;
+            if (!isNaN(angleB)) knownAngles++;
+            if (!isNaN(angleC)) knownAngles++;
+            
+            // 최소 2개의 값이 필요 (최소 1개의 변과 1개의 각)
+            if (knownSides < 1 || knownAngles < 1 || knownSides + knownAngles < 2) {
+                alert('사인법칙 계산을 위해 최소 1개의 변과 1개의 각이 필요합니다.');
+                return;
+            }
+            
+            // 결과 저장
+            let results = [];
+            
+            // 사인법칙을 이용하여 미지수 계산
+            const ratio = calculataSineLawRatio(sideA, angleA, sideB, angleB, sideC, angleC);
+            
+            // 변 계산
+            if (isNaN(sideA) && !isNaN(angleA)) {
+                const newSideA = ratio * Math.sin(angleA * Math.PI / 180);
+                results.push(`변 a = ${newSideA.toFixed(2)}`);
+            }
+            
+            if (isNaN(sideB) && !isNaN(angleB)) {
+                const newSideB = ratio * Math.sin(angleB * Math.PI / 180);
+                results.push(`변 b = ${newSideB.toFixed(2)}`);
+            }
+            
+            if (isNaN(sideC) && !isNaN(angleC)) {
+                const newSideC = ratio * Math.sin(angleC * Math.PI / 180);
+                results.push(`변 c = ${newSideC.toFixed(2)}`);
+            }
+            
+            // 각 계산
+            if (isNaN(angleA) && !isNaN(sideA)) {
+                const newAngleA = Math.asin(sideA / ratio) * 180 / Math.PI;
+                results.push(`각 A = ${newAngleA.toFixed(2)}°`);
+                
+                // 보각 존재할 수 있음
+                if (newAngleA < 90) {
+                    results.push(`(또는 각 A = ${(180 - newAngleA).toFixed(2)}° - 보각 가능)`);
+                }
+            }
+            
+            if (isNaN(angleB) && !isNaN(sideB)) {
+                const newAngleB = Math.asin(sideB / ratio) * 180 / Math.PI;
+                results.push(`각 B = ${newAngleB.toFixed(2)}°`);
+                
+                // 보각 존재할 수 있음
+                if (newAngleB < 90) {
+                    results.push(`(또는 각 B = ${(180 - newAngleB).toFixed(2)}° - 보각 가능)`);
+                }
+            }
+            
+            if (isNaN(angleC) && !isNaN(sideC)) {
+                const newAngleC = Math.asin(sideC / ratio) * 180 / Math.PI;
+                results.push(`각 C = ${newAngleC.toFixed(2)}°`);
+                
+                // 보각 존재할 수 있음
+                if (newAngleC < 90) {
+                    results.push(`(또는 각 C = ${(180 - newAngleC).toFixed(2)}° - 보각 가능)`);
+                }
+            }
+            
+            // 결과 표시
+            if (results.length > 0) {
+                resultDiv.innerHTML = `
+                    <h4>결과</h4>
+                    <div class="result-box">
+                        ${results.map(result => `<p>${result}</p>`).join('')}
+                        <p class="help-text">참고: 사인법칙에서는 두 가지 해가 가능할 수 있습니다.</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <h4>결과</h4>
+                    <p>계산할 수 있는 미지수가 없습니다.</p>
+                `;
+            }
+        }
+        
+        // 사인법칙 비율 계산
+        function calculataSineLawRatio(sideA, angleA, sideB, angleB, sideC, angleC) {
+            let ratio = 0;
+            let count = 0;
+            
+            if (!isNaN(sideA) && !isNaN(angleA)) {
+                ratio += sideA / Math.sin(angleA * Math.PI / 180);
+                count++;
+            }
+            
+            if (!isNaN(sideB) && !isNaN(angleB)) {
+                ratio += sideB / Math.sin(angleB * Math.PI / 180);
+                count++;
+            }
+            
+            if (!isNaN(sideC) && !isNaN(angleC)) {
+                ratio += sideC / Math.sin(angleC * Math.PI / 180);
+                count++;
+            }
+            
+            return ratio / count;
+        }
+    </script>
+</body>
+</html>
